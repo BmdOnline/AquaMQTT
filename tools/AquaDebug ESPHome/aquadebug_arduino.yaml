@@ -1,0 +1,103 @@
+substitutions:
+  device_name: "aquadebug"
+  friendly_name: "AquaDebug 1.0"
+
+  # ESP32S3 pins
+  main_rx_pin: GPIO5
+  main_tx_pin: GPIO6
+  hmi_rx_pin: GPIO7
+  hmi_tx_pin: GPIO8
+
+  # May not be changed
+  mqtt_client_id: "aquamqtt"
+  mqtt_prefix: "aquadbg"
+  mqtt_topic: "debug"
+
+  # Configure your MQTT settings
+  mqtt_broker: ip_address
+  mqtt_port: "1883"
+  mqtt_username: "username"
+  mqtt_password: "password"
+
+esphome:
+  name: $device_name
+  name_add_mac_suffix: true
+  friendly_name: $friendly_name
+  libraries:
+    locoduino/RingBuffer@1.0.5
+  platformio_options:
+    build_flags:
+      - -std=c++11
+
+esp32:
+  board: arduino_nano_esp32
+  framework:
+    type: arduino
+
+external_components:
+  - source:
+      type: local
+      path: my_components
+    components: [ aquadebug ]
+    refresh: 0s
+
+# Enable logging
+logger:
+
+ota:
+  #- platform: http_request
+  - platform: esphome
+    password: ""
+    version: 2
+
+# When using MQTT, do not enable Home Assistant API
+#api:
+
+wifi:
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "ESPHome Fallback"
+    password: ""
+  # Optional manual IP
+captive_portal:
+
+web_server:
+  port: 80
+
+mqtt:
+  id: mqtt_client
+  broker: ${mqtt_broker}
+  port: ${mqtt_port}
+  client_id: ${mqtt_client_id}
+  username: ${mqtt_username}
+  password: ${mqtt_password}
+  topic_prefix: ${mqtt_prefix}
+  log_topic: null
+  discover_ip: false
+  discovery: false
+
+uart:
+  - id: main_uart_id
+    tx_pin: ${main_tx_pin}
+    rx_pin: ${main_rx_pin}
+    baud_rate: 9550
+    data_bits: 8
+    parity: NONE
+    stop_bits: 2
+
+  - id: hmi_uart_id
+    tx_pin: ${hmi_tx_pin}
+    rx_pin: ${hmi_rx_pin}
+    baud_rate: 9550
+    data_bits: 8
+    parity: NONE
+    stop_bits: 2
+
+text_sensor:
+  - platform: aquadebug
+    name: AquaDebug sensor
+    main:
+      uart_id: main_uart_id
+    hmi:
+      uart_id: hmi_uart_id
+    state_topic: ${mqtt_prefix}/${mqtt_topic}
